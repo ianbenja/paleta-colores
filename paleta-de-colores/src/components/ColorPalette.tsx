@@ -1,14 +1,25 @@
 import React, { useState } from "react";
 import { Clipboard, Check } from "lucide-react";
 
+// Definimos los tipos que el componente espera
+type PaletteColor = {
+  hex: string;
+  name: string;
+};
+
+type DominantColor = {
+  hex: string;
+  name: string;
+} | null;
+
 interface ColorPaletteProps {
-  palette: string[] | null;
-  dominantColor: string | null;
+  palette: PaletteColor[] | null;
+  dominantColor: DominantColor;
   loading: boolean;
 }
 
 interface ColorSwatchProps {
-  color: string;
+  color: PaletteColor;
 }
 
 const ColorPalette: React.FC<ColorPaletteProps> = ({
@@ -32,21 +43,25 @@ const ColorPalette: React.FC<ColorPaletteProps> = ({
 
   const ColorSwatch: React.FC<ColorSwatchProps> = ({ color }) => (
     <div
-      className="relative rounded-lg h-28 flex items-center justify-center cursor-pointer group transition-transform transform hover:scale-105 shadow-lg"
-      style={{ backgroundColor: color }}
-      onClick={() => copyToClipboard(color)}
+      className="relative rounded-lg h-28 flex flex-col justify-end p-3 cursor-pointer group transition-transform transform hover:scale-105 shadow-lg"
+      style={{ backgroundColor: color.hex }}
+      onClick={() => copyToClipboard(color.hex)}
     >
-      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center rounded-lg">
-        <span className="text-white font-mono text-sm opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md">
-          {color}
-        </span>
-        <div className="absolute top-2 right-2 p-1.5 rounded-full bg-white/20 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white/40">
-          {copiedColor === color ? (
-            <Check size={16} />
-          ) : (
-            <Clipboard size={16} />
-          )}
-        </div>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-lg"></div>
+      <div className="relative z-10 text-left">
+        <p className="text-white font-bold text-sm drop-shadow-md capitalize">
+          {color.name}
+        </p>
+        <p className="text-gray-300 font-mono text-xs drop-shadow-md">
+          {color.hex}
+        </p>
+      </div>
+      <div className="absolute top-2 right-2 p-1.5 rounded-full bg-white/20 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white/40">
+        {copiedColor === color.hex ? (
+          <Check size={16} />
+        ) : (
+          <Clipboard size={16} />
+        )}
       </div>
     </div>
   );
@@ -55,7 +70,7 @@ const ColorPalette: React.FC<ColorPaletteProps> = ({
     return (
       <div className="mt-12 text-center text-gray-400 flex items-center justify-center gap-3">
         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-400"></div>
-        Extrayendo colores...
+        Analizando colores y buscando sus nombres...
       </div>
     );
   }

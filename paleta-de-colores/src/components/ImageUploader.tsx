@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useRef } from "react";
+import React, { type ChangeEvent, useRef } from "react";
 import { UploadCloud } from "lucide-react";
 
 interface ImageUploaderProps {

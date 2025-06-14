@@ -1,64 +1,79 @@
 import { useState, useEffect } from "react";
 import ColorThief from "colorthief";
+// IMPORTANTE: Importamos desde el nuevo archivo de servicio.
 
-/**
- * Hook personalizado para extraer la paleta de colores de una imagen.
- * @param {string | null} imageUrl - La URL de la imagen a procesar.
- * @param {number} [colorCount=10] - El número de colores a extraer.
- * @param {'hex' | 'rgb'} [format='hex'] - El formato de color de salida.
- * @returns {{ palette: string[] | null, dominantColor: string | null, loading: boolean }}
- */
-export const useColorThief = (
-  imageUrl: string | null,
-  colorCount = 10,
-  format = "hex"
-) => {
-  const [palette, setPalette] = useState<string[] | null>(null);
-  const [dominantColor, setDominantColor] = useState<string | null>(null);
+import { nameColorsInSpanish } from "../services/colorNamingService";
+type PaletteColor = { hex: string; name: string };
+type DominantColor = { hex: string; name: string } | null;
+
+export const useColorThief = (imageUrl: string | null, colorCount = 10) => {
+  const [palette, setPalette] = useState<PaletteColor[] | null>(null);
+  const [dominantColor, setDominantColor] = useState<DominantColor>(null);
   const [loading, setLoading] = useState(false);
+  const [statusText, setStatusText] = useState("");
 
   useEffect(() => {
-    if (!imageUrl) return;
+    if (!imageUrl) {
+      setPalette(null);
+      setDominantColor(null);
+      return;
+    }
 
-    const colorThief = new ColorThief();
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.src = imageUrl;
-    setLoading(true);
+    const processImage = async () => {
+      setLoading(true);
+      setStatusText("Analizando los colores de la imagen...");
+      const colorThief = new ColorThief();
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.src = imageUrl;
 
-    const rgbToHex = (r: number, g: number, b: number) =>
-      "#" +
-      [r, g, b]
-        .map((x) => {
-          const hex = x.toString(16);
-          return hex.length === 1 ? "0" + hex : hex;
-        })
-        .join("");
+      img.onload = async () => {
+        try {
+          // 1. Extraer los colores
+          const dominantRgb = colorThief.getColor(img);
+          const paletteRgb = colorThief.getPalette(img, colorCount);
 
-    img.onload = () => {
-      try {
-        const dominantRgb = colorThief.getColor(img);
-        const paletteRgb = colorThief.getPalette(img, colorCount);
+          const rgbToHex = (r: number, g: number, b: number): string =>
+            "#" +
+            [r, g, b].map((x) => x.toString(16).padStart(2, "0")).join("");
 
-        if (format === "hex") {
-          setDominantColor(rgbToHex(...dominantRgb));
-          setPalette(paletteRgb.map((color) => rgbToHex(...color)));
-        } else {
-          setDominantColor(`rgb(${dominantRgb.join(",")})`);
-          setPalette(paletteRgb.map((color) => `rgb(${color.join(",")})`));
+          const allHexColors = [
+            rgbToHex(...dominantRgb),
+            ...paletteRgb.map((color) => rgbToHex(...color)),
+          ];
+
+          // 2. Obtener los nombres comunes en español para todos los colores
+          setStatusText("Buscando nombres para los colores...");
+          const spanishNames = await nameColorsInSpanish(allHexColors);
+
+          // 3. Combinar los resultados y actualizar el estado
+          const [dominantName, ...paletteNames] = spanishNames;
+          setDominantColor({ hex: allHexColors[0], name: dominantName });
+          setPalette(
+            paletteNames.map((name, index) => ({
+              hex: allHexColors[index + 1],
+              name: name,
+            }))
+          );
+        } catch (error) {
+          console.error("Error procesando la imagen:", error);
+          setPalette(null);
+          setDominantColor(null);
+        } finally {
+          setLoading(false);
+          setStatusText("");
         }
-      } catch (error) {
-        console.error("Error al extraer los colores:", error);
-      } finally {
+      };
+
+      img.onerror = () => {
+        console.error("Error al cargar la imagen.");
         setLoading(false);
-      }
+        setStatusText("No se pudo cargar la imagen.");
+      };
     };
 
-    img.onerror = (error) => {
-      console.error("Error al cargar la imagen para color thief:", error);
-      setLoading(false);
-    };
-  }, [imageUrl, colorCount, format]);
+    processImage();
+  }, [imageUrl, colorCount]);
 
-  return { palette, dominantColor, loading };
+  return { palette, dominantColor, loading, statusText };
 };

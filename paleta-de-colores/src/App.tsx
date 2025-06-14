@@ -2,10 +2,10 @@ import { useState } from "react";
 import ImageUploader from "./components/ImageUploader";
 import ColorPalette from "./components/ColorPalette";
 import { useColorThief } from "./hooks/useColorThief";
-// No se necesita más App.css
 
 function App() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  // El hook ahora devuelve objetos con { hex, name }
   const { palette, dominantColor, loading } = useColorThief(imageUrl, 10);
 
   return (
@@ -31,7 +31,7 @@ function App() {
         </main>
 
         <footer className="text-center mt-20 text-gray-500 border-t border-gray-800 pt-6">
-          <p>Hecho con ❤️, React y Tailwind CSS.</p>
+          <p>Hecho por Ian Benjamin.</p>
         </footer>
       </div>
     </div>
